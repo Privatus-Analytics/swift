@@ -24,7 +24,8 @@ There are two library products:
 
 ## Requirements
 
-* Swift 5.9 or later, on Linux or macOS.
+* Swift 5.9 or later, on Linux or macOS. The tests need Swift 6, since they use
+  swift-testing.
 * Vapor 4 and Leaf 4, if you use `PrivatusAnalyticsVapor`.
 * A Privatus Analytics site id (it starts with `pa_`). You find it under
   Site settings, Tracking.
@@ -458,7 +459,7 @@ The checks run in Docker so your local Swift does not matter:
 ./run-docker.sh
 ```
 
-It runs `swift format lint`, the XCTest suite (the core, the middleware and
+It runs `swift format lint`, the swift-testing suite (the core, the middleware and
 the Leaf tags in a test Vapor app), and a release build, in the official
 `swift:6.0` image.
 

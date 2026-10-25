@@ -1,54 +1,53 @@
 import Foundation
 import PrivatusAnalytics
-import XCTest
+import Testing
 
-final class PagePropsTests: XCTestCase {
+@Suite final class PagePropsTests {
   func object(_ json: String?) throws -> [String: Any] {
-    let data = try XCTUnwrap(json).data(using: .utf8)!
-    return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let data = try #require(json).data(using: .utf8)!
+    return try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
   }
 
-  func testPropsBecomeAJSONObject() {
-    XCTAssertEqual(Privatus.pagePropsJSON(["plan": "pro", "role": "admin"]), #"{"plan":"pro","role":"admin"}"#)
+  @Test func propsBecomeAJSONObject() {
+    #expect(Privatus.pagePropsJSON(["plan": "pro", "role": "admin"]) == #"{"plan":"pro","role":"admin"}"#)
   }
 
-  func testEmptyPropsGiveNil() {
-    XCTAssertNil(Privatus.pagePropsJSON([:]))
-    XCTAssertNil(Privatus.pagePropsJSON(["gone": nil]))
-    XCTAssertNil(Privatus.pagePropsJSON(["nan": Double.nan]))
+  @Test func emptyPropsGiveNil() {
+    #expect(Privatus.pagePropsJSON([:]) == nil)
+    #expect(Privatus.pagePropsJSON(["gone": nil]) == nil)
+    #expect(Privatus.pagePropsJSON(["nan": Double.nan]) == nil)
   }
 
-  func testNumbersBooleansAndListsKeepTheirJSONTypes() {
+  @Test func numbersBooleansAndListsKeepTheirJSONTypes() {
     let flags: [PrivatusValue] = ["a", "b", 3]
-    XCTAssertEqual(
+    #expect(
       Privatus.pagePropsJSON([
         "seats": 5, "ratio": 1.5, "beta": true, "old": false, "flags": PrivatusValue.list(flags),
         "names": ["x", nil, "y"] as [String?],
-      ]),
-      #"{"seats":5,"ratio":1.5,"beta":true,"old":false,"flags":["a","b",3],"names":["x","y"]}"#)
+      ]) == #"{"seats":5,"ratio":1.5,"beta":true,"old":false,"flags":["a","b",3],"names":["x","y"]}"#)
   }
 
-  func testKeysAreCleanedLikeEventProps() {
-    XCTAssertEqual(Privatus.pagePropsJSON(["App Version": "2.1"]), #"{"app_version":"2.1"}"#)
+  @Test func keysAreCleanedLikeEventProps() {
+    #expect(Privatus.pagePropsJSON(["App Version": "2.1"]) == #"{"app_version":"2.1"}"#)
   }
 
-  func testLimitsPropsListItemsAndValueLength() throws {
-    let many = PrivatusProps((1...40).map { ("p\($0)", $0 as (any PrivatusValueConvertible)?) })
+  @Test func limitsPropsListItemsAndValueLength() throws {
+    let many = PrivatusProps(
+      (1...40).map { (index: Int) -> (String, (any PrivatusValueConvertible)?) in ("p\(index)", index) })
 
-    XCTAssertEqual(try object(Privatus.pagePropsJSON(many)).count, 30)
-    XCTAssertEqual(
-      try object(Privatus.pagePropsJSON(["list": (1...50).map(String.init)]))["list"].map { ($0 as! [Any]).count },
-      30)
-    XCTAssertEqual(
+    #expect(try object(Privatus.pagePropsJSON(many)).count == 30)
+    #expect(
+      try object(Privatus.pagePropsJSON(["list": (1...50).map(String.init)]))["list"].map { ($0 as! [Any]).count } == 30
+    )
+    #expect(
       try object(Privatus.pagePropsJSON(["long": String(repeating: "x", count: 900)]))["long"].map {
         ($0 as! String).count
-      }, 500)
+      } == 500)
   }
 
-  func testTheJSONIsSafeInsideAScriptTag() {
+  @Test func theJSONIsSafeInsideAScriptTag() {
     let json = Privatus.pagePropsJSON(["note": "</script><b>&\u{2028}\u{2029}\"\\\n"])
 
-    XCTAssertEqual(
-      json, #"{"note":"\u003c/script\u003e\u003cb\u003e\u0026\u2028\u2029\"\\\n"}"#)
+    #expect(json == #"{"note":"\u003c/script\u003e\u003cb\u003e\u0026\u2028\u2029\"\\\n"}"#)
   }
 }

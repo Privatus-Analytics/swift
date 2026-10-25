@@ -1,7 +1,7 @@
 import PrivatusAnalytics
-import XCTest
+import Testing
 
-final class TagTests: XCTestCase {
+@Suite final class TagTests {
   let noEnvironment: [String: String] = [:]
   var config = PrivatusConfiguration(siteID: "pa_TEST123456", enabled: true)
 
@@ -11,132 +11,129 @@ final class TagTests: XCTestCase {
     Privatus.tag(configuration ?? config, nonce: nonce, props: props, environment: noEnvironment)
   }
 
-  func testPrintsTheBasicSnippet() {
-    XCTAssertEqual(
-      render(), #"<script defer src="https://privatusstats.com/js/pa.js" data-site="pa_TEST123456"></script>"#)
+  @Test func printsTheBasicSnippet() {
+    #expect(render() == #"<script defer src="https://privatusstats.com/js/pa.js" data-site="pa_TEST123456"></script>"#)
   }
 
-  func testPrintsNothingWithoutASiteID() {
+  @Test func printsNothingWithoutASiteID() {
     config.siteID = nil
-    XCTAssertEqual(render(), "")
+    #expect(render() == "")
   }
 
-  func testOnlyProductionIsOnByDefault() {
+  @Test func onlyProductionIsOnByDefault() {
     config.enabled = nil
-    XCTAssertEqual(Privatus.tag(config, isProduction: false, environment: noEnvironment), "")
-    XCTAssertNotEqual(Privatus.tag(config, isProduction: true, environment: noEnvironment), "")
+    #expect(Privatus.tag(config, isProduction: false, environment: noEnvironment) == "")
+    #expect(Privatus.tag(config, isProduction: true, environment: noEnvironment) != "")
   }
 
-  func testEnabledForcesTheTagOnOrOff() {
+  @Test func enabledForcesTheTagOnOrOff() {
     config.enabled = false
-    XCTAssertEqual(Privatus.tag(config, isProduction: true, environment: noEnvironment), "")
+    #expect(Privatus.tag(config, isProduction: true, environment: noEnvironment) == "")
     config.enabled = true
-    XCTAssertTrue(config.isEnabled(isProduction: false))
+    #expect(config.isEnabled(isProduction: false))
   }
 
-  func testSiteIDAndScriptHostFallBackToTheEnvironment() {
+  @Test func siteIDAndScriptHostFallBackToTheEnvironment() {
     let environment = ["PRIVATUS_SITE_ID": "pa_FROMENV123", "PRIVATUS_SCRIPT_HOST": "https://stats.example.com/"]
     let blank = PrivatusConfiguration(enabled: true)
 
-    XCTAssertEqual(blank.resolvedSiteID(environment: environment), "pa_FROMENV123")
-    XCTAssertEqual(
-      Privatus.tag(blank, environment: environment),
-      #"<script defer src="https://stats.example.com/js/pa.js" data-site="pa_FROMENV123"></script>"#)
-    XCTAssertEqual(config.resolvedSiteID(environment: environment), "pa_TEST123456")
+    #expect(blank.resolvedSiteID(environment: environment) == "pa_FROMENV123")
+    #expect(
+      Privatus.tag(blank, environment: environment)
+        == #"<script defer src="https://stats.example.com/js/pa.js" data-site="pa_FROMENV123"></script>"#)
+    #expect(config.resolvedSiteID(environment: environment) == "pa_TEST123456")
   }
 
-  func testScriptHostDropsATrailingSlash() {
-    XCTAssertEqual(config.resolvedScriptHost(environment: noEnvironment), "https://privatusstats.com")
+  @Test func scriptHostDropsATrailingSlash() {
+    #expect(config.resolvedScriptHost(environment: noEnvironment) == "https://privatusstats.com")
     config.scriptHost = "https://stats.example.com/"
-    XCTAssertEqual(config.resolvedScriptHost(environment: noEnvironment), "https://stats.example.com")
+    #expect(config.resolvedScriptHost(environment: noEnvironment) == "https://stats.example.com")
   }
 
-  func testAddsModulesAndExclusions() {
+  @Test func addsModulesAndExclusions() {
     config.modules = ["engage", "auto"]
     config.excludedPaths = ["/admin/*", "/preview/*"]
     let tag = render()
 
-    XCTAssertTrue(tag.contains(#"data-modules="engage,auto""#))
-    XCTAssertTrue(tag.contains(#"data-exclude="/admin/*,/preview/*""#))
+    #expect(tag.contains(#"data-modules="engage,auto""#))
+    #expect(tag.contains(#"data-exclude="/admin/*,/preview/*""#))
   }
 
-  func testAnEmptyModulesListLoadsNone() {
+  @Test func anEmptyModulesListLoadsNone() {
     config.modules = []
-    XCTAssertTrue(render().contains(#"data-modules="""#))
+    #expect(render().contains(#"data-modules="""#))
   }
 
-  func testAddsDomainsSPAModeAndManualMode() {
+  @Test func addsDomainsSPAModeAndManualMode() {
     config.domains = ["example.com, www.example.com"]
     config.spa = .hash
     config.manual = true
     let tag = render()
 
-    XCTAssertTrue(tag.contains(#"data-domains="example.com,www.example.com""#))
-    XCTAssertTrue(tag.contains(#"data-spa="hash""#))
-    XCTAssertTrue(tag.contains(#"data-manual="true""#))
+    #expect(tag.contains(#"data-domains="example.com,www.example.com""#))
+    #expect(tag.contains(#"data-spa="hash""#))
+    #expect(tag.contains(#"data-manual="true""#))
   }
 
-  func testTheAutoSPAModeIsNotPrinted() {
+  @Test func theAutoSPAModeIsNotPrinted() {
     config.spa = .auto
-    XCTAssertFalse(render().contains("data-spa"))
+    #expect(!(render().contains("data-spa")))
   }
 
-  func testEscapesAttributeValues() {
+  @Test func escapesAttributeValues() {
     config.excludedPaths = [#"/a"b"#]
-    XCTAssertTrue(render().contains(#"data-exclude="/a&quot;b""#))
+    #expect(render().contains(#"data-exclude="/a&quot;b""#))
   }
 
-  func testAddsExtraAttributesAndANonce() {
+  @Test func addsExtraAttributesAndANonce() {
     config.extraAttributes = ["data-mask": "/orders/*->/orders/:id"]
     let tag = render(nonce: "abc123")
 
-    XCTAssertTrue(tag.contains(#"data-mask="/orders/*-&gt;/orders/:id""#))
-    XCTAssertTrue(tag.contains(#"nonce="abc123""#))
+    #expect(tag.contains(#"data-mask="/orders/*-&gt;/orders/:id""#))
+    #expect(tag.contains(#"nonce="abc123""#))
   }
 
-  func testPagePropsPrintAnInlineScriptBeforeTheTag() {
+  @Test func pagePropsPrintAnInlineScriptBeforeTheTag() {
     let html = render(props: ["plan": "pro", "role": "admin"])
 
-    XCTAssertEqual(
-      html,
-      #"<script>window.privatusPageProps=function(){return {"plan":"pro","role":"admin"}}</script>"# + "\n"
+    #expect(
+      html == #"<script>window.privatusPageProps=function(){return {"plan":"pro","role":"admin"}}</script>"# + "\n"
         + #"<script defer src="https://privatusstats.com/js/pa.js" data-site="pa_TEST123456" data-props="privatusPageProps"></script>"#
     )
   }
 
-  func testThePropsScriptGetsTheNonce() {
-    XCTAssertTrue(
-      render(nonce: "abc", props: ["plan": "pro"]).hasPrefix(#"<script nonce="abc">window.privatusPageProps="#))
+  @Test func thePropsScriptGetsTheNonce() {
+    #expect(render(nonce: "abc", props: ["plan": "pro"]).hasPrefix(#"<script nonce="abc">window.privatusPageProps="#))
   }
 
-  func testEmptyPropsPrintNoScript() {
-    XCTAssertFalse(render(props: ["plan": nil]).contains("privatusPageProps"))
+  @Test func emptyPropsPrintNoScript() {
+    #expect(!(render(props: ["plan": nil]).contains("privatusPageProps")))
   }
 
-  func testConfiguredPropsAreMergedWithPerCallProps() {
+  @Test func configuredPropsAreMergedWithPerCallProps() {
     config.props = ["plan": "pro", "role": "admin"]
-    XCTAssertTrue(render().contains(#"{"plan":"pro","role":"admin"}"#))
-    XCTAssertTrue(render(props: ["role": nil, "tier": "gold"]).contains(#"{"plan":"pro","tier":"gold"}"#))
+    #expect(render().contains(#"{"plan":"pro","role":"admin"}"#))
+    #expect(render(props: ["role": nil, "tier": "gold"]).contains(#"{"plan":"pro","tier":"gold"}"#))
   }
 
-  func testQueueStubPrintsTheOfficialStubFirst() {
+  @Test func queueStubPrintsTheOfficialStubFirst() {
     config.queueStub = true
     let parts = render(nonce: "abc", props: ["plan": "pro"]).components(separatedBy: "\n")
 
-    XCTAssertEqual(parts[0], #"<script nonce="abc">"# + Privatus.queueStub + "</script>")
-    XCTAssertTrue(parts[1].contains("privatusPageProps"))
-    XCTAssertTrue(parts[2].contains("/js/pa.js"))
+    #expect(parts[0] == #"<script nonce="abc">"# + Privatus.queueStub + "</script>")
+    #expect(parts[1].contains("privatusPageProps"))
+    #expect(parts[2].contains("/js/pa.js"))
   }
 
-  func testTheQueueStubIsTheOfficialOne() {
-    XCTAssertEqual(
-      Privatus.queueStub,
-      "window.privatus=window.privatus||{q:[]};['track','pageview','props','optOut','optIn','ready']"
+  @Test func theQueueStubIsTheOfficialOne() {
+    #expect(
+      Privatus.queueStub
+        == "window.privatus=window.privatus||{q:[]};['track','pageview','props','optOut','optIn','ready']"
         + ".forEach(function(m){window.privatus[m]=window.privatus[m]||function(){window.privatus.q.push("
         + "[m,Array.prototype.slice.call(arguments)])}})")
   }
 
-  func testNoQueueStubByDefault() {
-    XCTAssertFalse(render().contains("q:[]"))
+  @Test func noQueueStubByDefault() {
+    #expect(!(render().contains("q:[]")))
   }
 }
