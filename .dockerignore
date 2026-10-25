@@ -1,0 +1,7 @@
+.git
+.github
+.build
+.build-linux
+.swiftpm
+example/.build
+example/.swiftpm

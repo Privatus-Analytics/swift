@@ -1,0 +1,8 @@
+#extend("layout"):#export("body"):
+<h1>Events</h1>
+<button type="button" #privatusEvent("Report exported", "format", "csv", "source", "toolbar")>Export report</button>
+<p><a href="#pricing" #privatusClick("pricing.cta")>Pricing</a></p>
+<form action="/event" method="get" #privatusEvent("Signup form")>
+  <button type="submit">Sign up</button>
+</form>
+#endexport#endextend

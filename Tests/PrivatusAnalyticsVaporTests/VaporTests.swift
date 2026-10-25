@@ -13,6 +13,16 @@ struct PagePropsContext: Encodable {
   let pageProps: Props
 }
 
+struct SettingsContext: Encodable {
+  struct Settings: Encodable {
+    let enabled: Bool?
+    let queueStub: Bool?
+    let modules: [String]?
+  }
+  let pageProps: [String: String]
+  let settings: Settings
+}
+
 struct EventContext: Encodable {
   let props: [String: String]
 }
@@ -88,6 +98,20 @@ func withApp(_ body: (Application) async throws -> Void) async throws {
     }
   }
 
+  @Test func theRequestTagPrintsOnlyTheStubWhenOff() async throws {
+    try await withApp { app in
+      app.privatusAnalytics.configuration.enabled = false
+      app.privatusAnalytics.configuration.queueStub = true
+      app.privatusAnalytics.configuration.props = ["plan": "pro"]
+      app.privatusAnalytics.requestProps = { _ in fatalError("should not run") }
+      app.privatusAnalytics.nonce = { _ in "n0nce" }
+      let request = Request(application: app, on: app.eventLoopGroup.next())
+
+      #expect(request.privatusAnalytics.tag() == #"<script nonce="n0nce">"# + Privatus.queueStub + "</script>")
+      #expect(request.privatusAnalytics.tag { $0.queueStub = false } == "")
+    }
+  }
+
   // MARK: Middleware
 
   @Test func autoInjectAddsTheTagBeforeTheHead() async throws {
@@ -149,6 +173,7 @@ func withApp(_ body: (Application) async throws -> Void) async throws {
     try await withApp { app in
       app.privatusAnalytics.useAutoInject()
       app.privatusAnalytics.configuration.enabled = nil
+      app.privatusAnalytics.configuration.queueStub = true
       app.get("page") { _ in html(page) }
 
       try await app.test(.GET, "page") { res async in
@@ -239,6 +264,32 @@ func withApp(_ body: (Application) async throws -> Void) async throws {
         app, #"<a #privatusClick("pricing.cta")>Plans</a><a #privatusClick("no good")>x</a>"#)
 
       #expect(body == #"<a data-privatus-click="pricing.cta">Plans</a><a >x</a>"#)
+    }
+  }
+
+  @Test func theLeafTagTakesSettingsForOnePage() async throws {
+    try await withApp { app in
+      let body = try await renderLeaf(
+        app, "<head>#privatusAnalytics(pageProps, settings)</head>",
+        SettingsContext(
+          pageProps: ["plan": "pro"], settings: .init(enabled: false, queueStub: true, modules: nil)))
+      #expect(body == "<head><script>" + Privatus.queueStub + "</script></head>")
+    }
+    try await withApp { app in
+      let plain = try await renderLeaf(
+        app, "<head>#privatusAnalytics(pageProps, settings)</head>",
+        SettingsContext(
+          pageProps: ["plan": "pro"], settings: .init(enabled: false, queueStub: false, modules: nil)))
+      #expect(plain == "<head></head>")
+    }
+    try await withApp { app in
+      let on = try await renderLeaf(
+        app, "<head>#privatusAnalytics(pageProps, settings)</head>",
+        SettingsContext(pageProps: [:], settings: .init(enabled: nil, queueStub: nil, modules: ["engage"])))
+      #expect(
+        on
+          == #"<head><script defer src="https://privatusstats.com/js/pa.js" data-site="pa_TEST123456" data-modules="engage"></script></head>"#
+      )
     }
   }
 }

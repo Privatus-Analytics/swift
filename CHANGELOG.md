@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- When the tag is off (not enabled, outside production by default, or no site id)
+  and `queueStub` is on, `Privatus.tag`, `req.privatusAnalytics.tag()` and
+  `#privatusAnalytics()` print only the queue stub (with the nonce), so
+  `privatus.track` calls never fail. No tracker and no page props script print
+  then, and `requestProps` does not run. The middleware still adds nothing.
+- `#privatusAnalytics(pageProps, settings)`: a second dictionary changes settings
+  (such as `enabled` and `queueStub`) for one page.
+- Add the conformance example app in `example/` (Vapor and Leaf).
+- README: a privacy policy paragraph you can paste.
+
 ## 1.0.0 - 2026-10-25
 
 - Initial release.

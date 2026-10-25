@@ -27,7 +27,9 @@ extension Privatus {
   /// // <script defer src="https://privatusstats.com/js/pa.js" data-site="pa_YOURSITEID"></script>
   /// ```
   ///
-  /// Returns `""` without a site id, or when the tag is off. The tag is on when
+  /// Without a site id, or when the tag is off, it returns only the queue stub
+  /// script when `configuration.queueStub` is `true` (so `privatus.track` calls in
+  /// your own JavaScript never fail), else `""`. The tag is on when
   /// `configuration.enabled` is `true`, or when it is `nil` and `isProduction` is `true`.
   ///
   /// - Parameters:
@@ -43,7 +45,10 @@ extension Privatus {
   ) -> String {
     guard configuration.isEnabled(isProduction: isProduction),
       let siteID = configuration.resolvedSiteID(environment: environment)
-    else { return "" }
+    else {
+      // Off: only the queue stub (when on), so privatus.track calls never fail.
+      return configuration.queueStub ? inlineScript(queueStub, nonce: nonce) : ""
+    }
 
     let propsJSON = pagePropsJSON(configuration.props.merging(props))
     var html: [String] = []

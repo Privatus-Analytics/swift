@@ -136,4 +136,32 @@ import Testing
   @Test func noQueueStubByDefault() {
     #expect(!(render().contains("q:[]")))
   }
+
+  // MARK: When the tag is off
+
+  @Test func offWithTheQueueStubPrintsOnlyTheStubWithTheNonce() {
+    config.enabled = false
+    config.queueStub = true
+    #expect(render(nonce: "abc", props: ["plan": "pro"]) == #"<script nonce="abc">"# + Privatus.queueStub + "</script>")
+  }
+
+  @Test func offWithoutTheQueueStubPrintsNothing() {
+    config.enabled = false
+    config.queueStub = false
+    #expect(render(nonce: "abc", props: ["plan": "pro"]) == "")
+  }
+
+  @Test func noSiteIDWithTheQueueStubPrintsOnlyTheStub() {
+    config.siteID = nil
+    config.queueStub = true
+    #expect(render(props: ["plan": "pro"]) == "<script>" + Privatus.queueStub + "</script>")
+  }
+
+  @Test func outsideProductionWithTheQueueStubPrintsOnlyTheStub() {
+    config.enabled = nil
+    config.queueStub = true
+    #expect(
+      Privatus.tag(config, isProduction: false, environment: noEnvironment)
+        == "<script>" + Privatus.queueStub + "</script>")
+  }
 }

@@ -74,7 +74,8 @@ public struct PrivatusAnalyticsApplication {
     Privatus.shouldRender(configuration, isProduction: isProduction)
   }
 
-  /// The script tag for a request, or `""` when it should not print.
+  /// The script tag for a request. When the tag is off, only the queue stub
+  /// (if `queueStub` is on) or `""`.
   ///
   /// - Parameters:
   ///   - request: Used for `requestProps` and `nonce`. Without it, only the configured props print.
@@ -87,7 +88,11 @@ public struct PrivatusAnalyticsApplication {
   ) -> String {
     var configuration = self.configuration
     update(&configuration)
-    guard Privatus.shouldRender(configuration, isProduction: isProduction) else { return "" }
+    guard Privatus.shouldRender(configuration, isProduction: isProduction) else {
+      // Off: only the queue stub (when on). requestProps does not run.
+      guard configuration.queueStub else { return "" }
+      return Privatus.tag(configuration, isProduction: isProduction, nonce: request.flatMap { self.nonce?($0) })
+    }
 
     var allProps = PrivatusProps()
     var nonce: String?
@@ -119,7 +124,8 @@ extension Request {
 public struct PrivatusAnalyticsRequest {
   let request: Request
 
-  /// The script tag for this request, with its page props and nonce. `""` when it should not print.
+  /// The script tag for this request, with its page props and nonce. When the
+  /// tag is off, only the queue stub (if `queueStub` is on) or `""`.
   public func tag(
     props: PrivatusProps = [:],
     update: (inout PrivatusConfiguration) -> Void = { _ in }

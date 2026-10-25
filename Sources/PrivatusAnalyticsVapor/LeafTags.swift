@@ -21,7 +21,10 @@ extension PrivatusAnalyticsApplication {
 /// `#privatusAnalytics()` prints the script tag. Put it in the `<head>` of your layout.
 ///
 /// Pass a dictionary from your context to set page props for one page:
-/// `#privatusAnalytics(pageProps)`.
+/// `#privatusAnalytics(pageProps)`. A second dictionary changes settings for
+/// one page: `#privatusAnalytics(pageProps, settings)`, with any of the keys
+/// `enabled`, `queueStub`, `siteID`, `scriptHost`, `modules`, `excludedPaths`,
+/// `domains`, `spa` and `manual`.
 public struct PrivatusAnalyticsLeafTag: UnsafeUnescapedLeafTag {
   public init() {}
 
@@ -35,7 +38,25 @@ public struct PrivatusAnalyticsLeafTag: UnsafeUnescapedLeafTag {
     if let first = ctx.parameters.first, let dictionary = first.dictionary {
       props = PrivatusProps(leaf: dictionary)
     }
-    return .string(application.privatusAnalytics.tag(for: ctx.request, props: props))
+    let settings = ctx.parameters.count > 1 ? ctx.parameters[1].dictionary ?? [:] : [:]
+    return .string(
+      application.privatusAnalytics.tag(for: ctx.request, props: props) { Self.apply(settings, to: &$0) })
+  }
+
+  static func apply(_ settings: [String: LeafData], to configuration: inout PrivatusConfiguration) {
+    func strings(_ key: String) -> [String]? {
+      guard let value = settings[key], !value.isNil else { return nil }
+      return value.array?.compactMap(\.string) ?? value.string.map { [$0] }
+    }
+    if let value = settings["enabled"], !value.isNil { configuration.enabled = value.bool }
+    if let value = settings["queueStub"]?.bool { configuration.queueStub = value }
+    if let value = settings["manual"]?.bool { configuration.manual = value }
+    if let value = settings["siteID"]?.string { configuration.siteID = value }
+    if let value = settings["scriptHost"]?.string { configuration.scriptHost = value }
+    if let value = settings["spa"]?.string { configuration.spa = PrivatusSPAMode(rawValue: value) }
+    if let value = strings("modules") { configuration.modules = value }
+    if let value = strings("excludedPaths") { configuration.excludedPaths = value }
+    if let value = strings("domains") { configuration.domains = value }
   }
 }
 
