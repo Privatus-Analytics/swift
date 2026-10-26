@@ -1,26 +1,48 @@
 # Privatus Analytics for Swift and Vapor
 
-Adds the cookieless [Privatus Analytics](https://privatusanalytics.com)
-tracking script to your Swift web app. Use the Leaf tags, the Vapor
-middleware that puts it in the `<head>` for you, or the plain Swift functions
-with any HTML builder, such as Elementary or Plot.
+**Simple, private website analytics for your Swift web app. No cookies, honest numbers,
+and a dashboard you understand in seconds.**
 
-Privatus Analytics counts visits, sources, pages and conversions without
-cookies, local storage or fingerprinting (a way of telling browsers apart by
-their settings), so analytics does not need a consent banner by itself. Check
-with your own counsel for your country.
+## Why Privatus Analytics
 
-The package only prints the browser script and a few HTML attributes. It never
-sends events from your server, makes no network requests and sets no cookies.
-You need a Privatus Analytics account to see reports, and there is a free
-plan. Sign up at https://privatusanalytics.com.
+**Google Analytics is slow, confusing and hungry for data.** It sends what your
+visitors do to Google. In many countries it means showing a cookie pop-up (the box
+that asks visitors to accept cookies), and many people click "reject", so you never
+see them. Bots pad the numbers that are left.
 
-There are two library products:
+**Privatus Analytics fixes that.** It counts visits to your Swift web app without cookies and
+never stores IP addresses. Bots are filtered out before they are counted. Your
+data is never sold or shared.
 
-* `PrivatusAnalytics`: the core. It needs only Foundation, so it works with
+What you get:
+
+- **A dashboard you understand in seconds.** Visitors, top pages and where people
+  came from, all on one screen.
+- **No cookie pop-up needed for our analytics.** We set no cookies and store no
+  personal data. Laws differ by country, so check your own legal advice.
+- **Honest numbers.** Known bots and fake traffic are left out on every plan.
+- **A fast site.** The tracking script is about 3 KB, tiny next to most tracking tags.
+- **Data you own.** We never sell it or show you ads, and you can pull it out
+  any time through the API.
+
+**Start free.** The Free plan has 10,000 events a month and 3 sites, with no card.
+Every new account also gets 14 days of Pro free, with no card.
+[Create your account](https://privatusanalytics.com).
+
+## What this package does
+
+- Leaf tags, a Vapor middleware that puts the script in the `<head>` for you,
+  and plain Swift functions for any HTML builder, such as Elementary or Plot.
+- `PrivatusAnalytics` is the core. It needs only Foundation, so it works with
   any Swift server framework or HTML builder.
-* `PrivatusAnalyticsVapor`: Vapor 4 settings, a middleware, and Leaf tags. It
-  includes the core, so one import is enough.
+- `PrivatusAnalyticsVapor` adds Vapor 4 settings, a middleware, and Leaf tags.
+  It includes the core, so one import is enough.
+- The package only prints the browser script and a few HTML attributes. It
+  never sends events from your server, makes no network requests and sets no
+  cookies.
+
+You need a Privatus Analytics account to see your reports, and there is a
+free plan. [Sign up at privatusanalytics.com](https://privatusanalytics.com).
 
 ## Requirements
 
@@ -122,12 +144,12 @@ yourself. The middleware does nothing while `autoInject` is `false`.
 It adds the tag just before `</head>` in `text/html` responses with status
 200, and fixes the `Content-Length` header. It skips Ajax requests (those that
 send `X-Requested-With: XMLHttpRequest`), pages without a `<head>`, pages that
-already have the tag, and streamed bodies. Responses that carry a
+already have the tag, and streamed bodies. Responses that have a
 `Content-Encoding` header (compressed responses) are left alone.
 
 ### Content Security Policy nonce
 
-A Content Security Policy (CSP) can block scripts unless they carry a one-time
+A Content Security Policy (CSP) can block scripts unless they have a one-time
 code called a nonce. Vapor has no nonce of its own, so tell the package where
 yours is. The Leaf tag, `req.privatusAnalytics.tag()` and the middleware all
 use it:
@@ -223,7 +245,7 @@ signed-in staff, skip the tag for them:
 
 ## Product analytics: see which features people use
 
-Privatus can show which buttons, forms and features people really use. You
+Privatus Analytics can show which buttons, forms and features people really use. You
 add a few attributes to your HTML. The tracker reads them in the browser and
 sends the events. Your server still sends nothing.
 
@@ -331,7 +353,7 @@ they are safe inside a script. The closure only runs when the tag prints. The
 middleware uses the same settings.
 
 **Never put names, emails, user ids or anything that points to one person in
-props.** Privatus counts visitors without any id. Put groups (like the plan or
+props.** Privatus Analytics counts visitors without any id. Put groups (like the plan or
 the role), not people. The server also removes emails and long ids it finds.
 
 ### Track from your own JavaScript
@@ -356,7 +378,7 @@ or for one page: `req.privatusAnalytics.tag { $0.queueStub = true }`.
 
 The stub prints even when the tag is off (outside production, without a site
 id, or with `enabled = false`). Only the stub prints then: no tracker and no
-page props. So your `privatus.track` calls never fail; they wait in the queue
+page props. So your `privatus.track` calls never fail. They wait in the queue
 and are never sent.
 
 ### See the results
